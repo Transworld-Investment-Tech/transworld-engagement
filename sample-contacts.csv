@@ -1,0 +1,5 @@
+title,first_name,last_name,email,phone,date_of_birth,tags
+Mr,Adewale,Okonkwo,adewale.okonkwo@example.com,+2348031234567,1985-04-12,HNW;Newsletter
+Mrs,Ngozi,Eze,ngozi.eze@example.com,+2348051234568,17/09/1979,Retail
+Dr,Ibrahim,Bello,ibrahim.bello@example.com,+2348071234569,1990-12-03,Institutional|Newsletter
+Chief,Folake,Adeyemi,folake.adeyemi@example.com,+2348091234570,,HNW
