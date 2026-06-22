@@ -24,8 +24,8 @@ export default function GreetingTemplateForm({ initial = null }) {
   const bodyRef = useRef(null);
 
   const preview = useMemo(
-    () => renderGreeting({ subject, html_body: htmlBody }, SAMPLE).html,
-    [subject, htmlBody]
+    () => renderGreeting({ type, subject, html_body: htmlBody }, SAMPLE).html,
+    [type, subject, htmlBody]
   );
 
   function useStarter() {

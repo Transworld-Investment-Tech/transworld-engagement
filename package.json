@@ -1,7 +1,7 @@
 {
   "name": "transworld-engagement",
-  "version": "1.6.0",
-  "releaseNote": "dashboard — clickable stat cards surface active contacts and the birthday lists behind them",
+  "version": "1.7.0",
+  "releaseNote": "greetings — birthday email now leads with the designed Transworld card (responsive hero, personalized salutation, full message preserved as the image-blocked fallback)",
   "private": true,
   "scripts": {
     "dev": "next dev",
