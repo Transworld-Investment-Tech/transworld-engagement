@@ -7,11 +7,17 @@ export async function middleware(req) {
   const { pathname } = req.nextUrl;
 
   // Allow Next internals, static assets, and the login + auth endpoints.
+  // `/sign` and `/api/sign` are the client signing flow: clients are not staff
+  // and have no session, so these are public and secure THEMSELVES via the
+  // one-time sign_token (+ an emailed OTP) — the same self-securing pattern the
+  // cron route uses.
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/cron") ||
+    pathname.startsWith("/sign") ||
+    pathname.startsWith("/api/sign") ||
     PUBLIC.includes(pathname)
   ) {
     return NextResponse.next();

@@ -130,6 +130,12 @@ create table if not exists signatories (
   signer_ip       text,
   signer_user_agent text,
   signed_at       timestamptz,
+  -- OTP second factor for the client signing link (v1.2). Hash only, never
+  -- plaintext: sha256(code + ':' + sign_token). Officer signs in-app, no OTP.
+  otp_code_hash   text,
+  otp_expires_at  timestamptz,
+  otp_sent_at     timestamptz,
+  otp_attempts    int not null default 0,
   created_at      timestamptz not null default now()
 );
 
@@ -167,6 +173,12 @@ create table if not exists signature_events (
 );
 
 create index if not exists idx_signature_events_document on signature_events (document_id);
+
+-- Private Storage bucket for PDFs (originals/ and signed/). Private: every fetch
+-- is a short-lived signed URL minted server-side. (v1.2)
+insert into storage.buckets (id, name, public)
+values ('documents', 'documents', false)
+on conflict (id) do nothing;
 
 -- ----------------------------------------------------------------------------
 -- 5. updated_at triggers

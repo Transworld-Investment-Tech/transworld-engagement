@@ -8,8 +8,7 @@ const NAV = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/contacts", label: "Contacts" },
   { href: "/greetings", label: "Greetings" },
-  // Documents arrives in the next build:
-  { href: "/documents", label: "Documents", soon: true },
+  { href: "/documents", label: "Documents" },
 ];
 
 export default function AppShell({ user, children }) {

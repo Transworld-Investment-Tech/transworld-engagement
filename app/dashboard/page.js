@@ -104,19 +104,20 @@ export default async function Dashboard() {
           </span>
         </Link>
 
-        <div className="card p-5 opacity-80">
+        <Link href="/documents" className="card group p-5 transition-shadow hover:shadow-md">
           <div className="flex items-center justify-between">
-            <h3 className="font-serif text-lg text-ink">Documents</h3>
-            <span className="rounded-full bg-gold-50 px-2.5 py-0.5 text-xs font-medium text-gold-600">
-              Next build
-            </span>
+            <h3 className="font-serif text-lg text-navy">Documents</h3>
+            <span className="chip">Live</span>
           </div>
           <p className="mt-2 text-sm leading-relaxed text-muted">
             Upload a document, send it for signing, and collect a client
             signature plus a TISL officer countersignature with a full audit
             trail.
           </p>
-        </div>
+          <span className="mt-4 inline-block text-sm font-medium text-navy-700 group-hover:text-navy">
+            Open documents →
+          </span>
+        </Link>
       </div>
     </AppShell>
   );
