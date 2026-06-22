@@ -90,18 +90,19 @@ export default async function Dashboard() {
           </span>
         </Link>
 
-        <div className="card p-5 opacity-80">
+        <Link href="/greetings" className="card group p-5 transition-shadow hover:shadow-md">
           <div className="flex items-center justify-between">
-            <h3 className="font-serif text-lg text-ink">Greetings</h3>
-            <span className="rounded-full bg-gold-50 px-2.5 py-0.5 text-xs font-medium text-gold-600">
-              Next build
-            </span>
+            <h3 className="font-serif text-lg text-navy">Greetings</h3>
+            <span className="chip">Live</span>
           </div>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            Designed birthday and holiday emails, automatic birthday sends, and
-            one-off broadcasts. Email first; WhatsApp later.
+            Designed birthday and holiday emails, an approval queue for automatic
+            birthday sends, and one-off broadcasts. Email first; WhatsApp later.
           </p>
-        </div>
+          <span className="mt-4 inline-block text-sm font-medium text-navy-700 group-hover:text-navy">
+            Open greetings →
+          </span>
+        </Link>
 
         <div className="card p-5 opacity-80">
           <div className="flex items-center justify-between">

@@ -11,6 +11,7 @@ export async function middleware(req) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/cron") ||
     PUBLIC.includes(pathname)
   ) {
     return NextResponse.next();

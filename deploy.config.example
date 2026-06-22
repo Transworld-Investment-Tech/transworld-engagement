@@ -8,9 +8,13 @@ SUPABASE_SERVICE_ROLE_KEY=""     # Supabase ▸ Settings ▸ API ▸ service_rol
 # --- Auth -----------------------------------------------------------------
 JWT_SECRET=""                    # generate with:  openssl rand -base64 48
 
-# --- Email (Resend) — used by Greetings in v1.1; optional now -------------
+# --- Email (Resend) — used by Greetings in v1.1 --------------------------
 RESEND_API_KEY=""
 MAIL_FROM="Transworld <noreply@transworldltd.com.ng>"
+
+# --- Greetings reminder cron (v1.1) --------------------------------------
+CRON_SECRET=""                  # any long random string; Vercel sends it as a Bearer token to the cron route. Generate with: openssl rand -base64 32
+GREETINGS_REMINDER_TO=""        # who gets the morning "birthdays to release" email, e.g. "okezie@transworldltd.com.ng"  (comma-separate for several)
 
 # --- App ------------------------------------------------------------------
 NEXT_PUBLIC_APP_URL="https://transworld-engagement.vercel.app"
@@ -19,4 +23,4 @@ NEXT_PUBLIC_APP_URL="https://transworld-engagement.vercel.app"
 GIT_REMOTE="https://github.com/Transworld-Investment-Tech/transworld-engagement.git"
 GIT_NAME="Okezie Ofoegbu"
 GIT_EMAIL="okezie@transworldltd.com.ng"
-DEPLOY_MESSAGE="v1.0.1: foundation — auth, contacts, CSV import, automated deploy"
+DEPLOY_MESSAGE="v1.1.0: greetings — birthday approval queue, broadcasts, templates, morning reminder"

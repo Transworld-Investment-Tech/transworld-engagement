@@ -37,6 +37,8 @@ JWT_SECRET=${JWT_SECRET}
 RESEND_API_KEY=${RESEND_API_KEY:-}
 MAIL_FROM=${MAIL_FROM:-Transworld <noreply@transworldltd.com.ng>}
 NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+CRON_SECRET=${CRON_SECRET:-}
+GREETINGS_REMINDER_TO=${GREETINGS_REMINDER_TO:-}
 EOF
 ok ".env.local written"
 
