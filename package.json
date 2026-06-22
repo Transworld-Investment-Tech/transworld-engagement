@@ -1,7 +1,7 @@
 {
   "name": "transworld-engagement",
-  "version": "1.7.0",
-  "releaseNote": "greetings — birthday email now leads with the designed Transworld card (responsive hero, personalized salutation, full message preserved as the image-blocked fallback)",
+  "version": "1.7.1",
+  "releaseNote": "greetings — birthday card in the in-app preview now loads from the app's own origin, so the preview never shows a broken card during a deploy; the sent email keeps the absolute URL",
   "private": true,
   "scripts": {
     "dev": "next dev",

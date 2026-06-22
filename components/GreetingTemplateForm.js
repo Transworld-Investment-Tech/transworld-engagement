@@ -24,7 +24,7 @@ export default function GreetingTemplateForm({ initial = null }) {
   const bodyRef = useRef(null);
 
   const preview = useMemo(
-    () => renderGreeting({ type, subject, html_body: htmlBody }, SAMPLE).html,
+    () => renderGreeting({ type, subject, html_body: htmlBody }, SAMPLE, { assetBase: "" }).html,
     [type, subject, htmlBody]
   );
 

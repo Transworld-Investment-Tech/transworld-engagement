@@ -291,7 +291,7 @@ export default function BirthdaysClient({ canSend }) {
                 Close
               </button>
             </div>
-            <EmailPreview html={renderGreeting(template, previewContact).html} height={460} />
+            <EmailPreview html={renderGreeting(template, previewContact, { assetBase: "" }).html} height={460} />
             {canSend && (
               <div className="mt-3 flex justify-end gap-2">
                 <button onClick={() => { skip([previewContact.id]); setPreviewId(null); }} className="btn-ghost text-xs">
