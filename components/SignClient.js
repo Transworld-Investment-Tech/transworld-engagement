@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SignaturePad from "@/components/SignaturePad";
+import PdfFieldLayer from "@/components/PdfFieldLayer";
+import { formatSignDate, looksLikeNameField } from "@/lib/pdfFields";
 
 function Shell({ children }) {
   return (
@@ -37,14 +39,18 @@ export default function SignClient({ token }) {
   const [info, setInfo] = useState(null);
   const [fatal, setFatal] = useState("");
 
-  // signing state
   const [phase, setPhase] = useState("identity"); // identity → code → sign → done
   const [code, setCode] = useState("");
   const [sig, setSig] = useState(null);
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [doneState, setDoneState] = useState(null); // "completed" | "awaiting"
+  const [doneState, setDoneState] = useState(null);
+
+  // in-document fields
+  const [values, setValues] = useState({});
+  const [padOpen, setPadOpen] = useState(false);
+  const [padSig, setPadSig] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -67,6 +73,11 @@ export default function SignClient({ token }) {
       }
     })();
   }, [token]);
+
+  const accept = info?.document?.kind === "acceptance";
+  const fields = useMemo(() => info?.fields || [], [info]);
+  const signatureFields = useMemo(() => fields.filter((f) => f.field_type === "signature"), [fields]);
+  const hasSignatureField = signatureFields.length > 0;
 
   async function call(action, extra) {
     const res = await fetch(`/api/sign/${token}`, {
@@ -92,11 +103,22 @@ export default function SignClient({ token }) {
     }
   }
 
+  function seedValues() {
+    const v = {};
+    const today = formatSignDate(new Date());
+    for (const f of fields) {
+      if (f.field_type === "date") v[f.id] = today;
+      else if (looksLikeNameField(f)) v[f.id] = info.signer.name || "";
+    }
+    setValues(v);
+  }
+
   async function verifyCode() {
     setBusy("verify");
     setError("");
     try {
       await call("verify-otp", { otp: code.trim() });
+      seedValues();
       setPhase("sign");
     } catch (e) {
       setError(e.message);
@@ -105,7 +127,26 @@ export default function SignClient({ token }) {
     }
   }
 
+  const requiredMissing = useMemo(() => {
+    return fields.some(
+      (f) =>
+        (f.field_type === "text" || f.field_type === "initial") &&
+        f.required !== false &&
+        !String(values[f.id] || "").trim()
+    );
+  }, [fields, values]);
+
+  const canSubmit = consent && !!sig && !requiredMissing;
+
   async function submit() {
+    if (!sig) {
+      setError(
+        hasSignatureField
+          ? "Tap the signature field in the document to sign."
+          : "Please add your signature below."
+      );
+      return;
+    }
     setBusy("submit");
     setError("");
     try {
@@ -114,6 +155,7 @@ export default function SignClient({ token }) {
         signature_type: sig.type,
         signature_data: sig.data,
         consent: true,
+        field_values: values,
       });
       setDoneState(d.completed ? "completed" : "awaiting");
       setPhase("done");
@@ -147,16 +189,25 @@ export default function SignClient({ token }) {
   }
 
   if (phase === "done") {
+    const accepted = accept;
     return (
       <Shell>
         <Card>
           <div className="eyebrow">{info?.document?.title}</div>
           <h1 className="mt-1 font-serif text-2xl text-navy">
-            {doneState === "already" ? "You have already signed" : "Thank you — your signature is recorded"}
+            {doneState === "already"
+              ? accepted
+                ? "You have already accepted"
+                : "You have already signed"
+              : accepted
+              ? "Thank you — your acceptance is recorded"
+              : "Thank you — your signature is recorded"}
           </h1>
           <p className="mt-2 text-sm text-muted">
             {doneState === "completed" &&
-              "This document is now fully executed. A confirmation has been emailed to you."}
+              (accepted
+                ? "Your acceptance is confirmed. A copy has been emailed to you."
+                : "This document is now fully executed. A confirmation has been emailed to you.")}
             {doneState === "awaiting" &&
               "Your signature has been captured. Transworld will countersign to complete the document, and you will receive a confirmation by email."}
             {doneState === "already" &&
@@ -167,41 +218,20 @@ export default function SignClient({ token }) {
     );
   }
 
+  const signMode = phase === "sign";
+
   return (
     <Shell>
       <div className="mb-5">
-        <div className="eyebrow">Document for your signature</div>
+        <div className="eyebrow">{accept ? "Proposal for your acceptance" : "Document for your signature"}</div>
         <h1 className="mt-1 font-serif text-3xl text-ink">{info.document.title}</h1>
         <p className="mt-1 text-sm text-muted">
-          Prepared for {info.signer.name}. Please review the document, then sign below.
+          Prepared for {info.signer.name}.{" "}
+          {accept
+            ? "Please review the proposal, then complete the fields and accept below."
+            : "Please review the document, then complete the fields and sign below."}
         </p>
       </div>
-
-      {/* Viewer */}
-      <Card className="mb-5">
-        {info.viewUrl ? (
-          <div>
-            <iframe
-              title="Document"
-              src={info.viewUrl}
-              className="h-[55vh] w-full rounded-lg border border-line bg-white"
-            />
-            <a
-              href={info.viewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-block text-sm font-medium text-navy-700 underline"
-            >
-              Open the document in a new tab
-            </a>
-          </div>
-        ) : (
-          <p className="text-sm text-muted">
-            The document preview could not be loaded. You can still sign below, or contact
-            Transworld for assistance.
-          </p>
-        )}
-      </Card>
 
       {/* Step 1 — identity */}
       <Card className="mb-5">
@@ -258,23 +288,110 @@ export default function SignClient({ token }) {
         )}
       </Card>
 
-      {/* Step 2 — sign */}
-      <Card className={phase === "sign" ? "" : "opacity-50"}>
+      {/* Document with in-place fields */}
+      <Card className="mb-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="font-serif text-lg text-navy">
+            {signMode ? (accept ? "Complete & accept" : "Complete & sign") : "Review the document"}
+          </h2>
+          {info.viewUrl && (
+            <a
+              href={info.viewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-navy-700 underline"
+            >
+              Open in a new tab
+            </a>
+          )}
+        </div>
+
+        {!signMode && (
+          <p className="mb-3 text-sm text-muted">
+            Confirm your identity above to fill in and {accept ? "accept" : "sign"} the document.
+          </p>
+        )}
+        {signMode && fields.length > 0 && (
+          <p className="mb-3 text-sm text-muted">
+            Fill the highlighted fields{hasSignatureField ? " and tap the signature box to sign" : ""}.
+            Date fields are filled with today's date automatically.
+          </p>
+        )}
+
+        <div className="max-h-[72vh] overflow-y-auto rounded-lg bg-navy-50/30 p-2 sm:p-3">
+          {info.fileUrl ? (
+            <PdfFieldLayer
+              src={{ url: info.fileUrl }}
+              fields={fields}
+              mode={signMode ? "sign" : "view"}
+              values={values}
+              onValue={(id, val) => setValues((p) => ({ ...p, [id]: val }))}
+              signatureFor={(f) => (f.field_type === "signature" ? sig : null)}
+              onSignRequest={() => {
+                setPadSig(sig);
+                setPadOpen(true);
+              }}
+            />
+          ) : (
+            <p className="p-4 text-sm text-muted">
+              The document preview could not be loaded. Please contact Transworld for assistance.
+            </p>
+          )}
+        </div>
+      </Card>
+
+      {/* Step 2 — sign / accept */}
+      <Card className={signMode ? "" : "opacity-50"}>
         <div className="flex items-center gap-2">
           <span
             className={
               "flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white " +
-              (phase === "sign" ? "bg-navy" : "bg-navy-200")
+              (signMode ? "bg-navy" : "bg-navy-200")
             }
           >
             2
           </span>
-          <h2 className="font-serif text-lg text-navy">Sign the document</h2>
+          <h2 className="font-serif text-lg text-navy">{accept ? "Accept the proposal" : "Sign the document"}</h2>
         </div>
 
-        {phase === "sign" ? (
+        {signMode ? (
           <div className="mt-4">
-            <SignaturePad defaultName={info.signer.name} onChange={setSig} />
+            {/* Signature: in-document field, or an inline pad when none is placed */}
+            {hasSignatureField ? (
+              <div className="rounded-lg border border-line bg-white p-3 text-sm">
+                {sig ? (
+                  <span className="inline-flex items-center gap-2 text-green-700">
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-green-50 text-xs">
+                      ✓
+                    </span>
+                    Signature added.{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPadSig(sig);
+                        setPadOpen(true);
+                      }}
+                      className="text-navy-700 underline"
+                    >
+                      Change
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPadSig(null);
+                      setPadOpen(true);
+                    }}
+                    className="btn-primary"
+                  >
+                    Tap to sign
+                  </button>
+                )}
+              </div>
+            ) : (
+              <SignaturePad defaultName={info.signer.name} onChange={setSig} />
+            )}
 
             <label className="mt-4 flex items-start gap-3 text-sm text-ink">
               <input
@@ -284,8 +401,9 @@ export default function SignClient({ token }) {
                 className="mt-1"
               />
               <span>
-                I, {info.signer.name}, agree to sign this document electronically, and I agree that
-                my electronic signature is the legal equivalent of my handwritten signature.
+                I, {info.signer.name}, agree to {accept ? "accept" : "sign"} this document
+                electronically, and I agree that my electronic {accept ? "acceptance and signature" : "signature"} is
+                the legal equivalent of my handwritten signature.
               </span>
             </label>
 
@@ -295,13 +413,12 @@ export default function SignClient({ token }) {
               </div>
             )}
 
-            <button
-              onClick={submit}
-              disabled={!sig || !consent || busy === "submit"}
-              className="btn-gold mt-4"
-            >
-              {busy === "submit" ? "Submitting…" : "Sign document"}
+            <button onClick={submit} disabled={!canSubmit || busy === "submit"} className="btn-gold mt-4">
+              {busy === "submit" ? "Submitting…" : accept ? "Accept proposal" : "Sign document"}
             </button>
+            {requiredMissing && (
+              <p className="mt-2 text-xs text-muted">Please complete all required fields above.</p>
+            )}
           </div>
         ) : (
           <p className="mt-2 text-sm text-muted">Confirm your identity above to continue.</p>
@@ -311,6 +428,35 @@ export default function SignClient({ token }) {
       {phase !== "sign" && error && (
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
+        </div>
+      )}
+
+      {/* signature modal */}
+      {padOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-navy-deep/50 p-4 sm:items-center">
+          <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-card">
+            <h3 className="font-serif text-lg text-navy">Your signature</h3>
+            <p className="mt-1 text-sm text-muted">Draw or type your signature, then apply it.</p>
+            <div className="mt-3">
+              <SignaturePad defaultName={info.signer.name} onChange={setPadSig} />
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSig(padSig);
+                  setPadOpen(false);
+                }}
+                disabled={!padSig}
+                className="btn-primary"
+              >
+                Apply signature
+              </button>
+              <button type="button" onClick={() => setPadOpen(false)} className="btn-ghost">
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </Shell>

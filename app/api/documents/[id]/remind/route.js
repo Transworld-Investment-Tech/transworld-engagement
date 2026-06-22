@@ -30,7 +30,7 @@ export async function POST(req, { params }) {
   const supabase = getSupabase();
   const { data: document } = await supabase
     .from("documents")
-    .select("id,title,status")
+    .select("id,title,status,kind")
     .eq("id", params.id)
     .maybeSingle();
   if (!document) return NextResponse.json({ error: "Document not found" }, { status: 404 });
@@ -95,6 +95,7 @@ export async function POST(req, { params }) {
     documentTitle: document.title,
     signUrl,
     expiresLabel: formatLagos(target.token_expires_at),
+    kind: document.kind,
   });
   const sent = await sendEmail({ to: target.email, subject, html });
   if (!sent.ok) return NextResponse.json({ error: "Email failed: " + sent.error }, { status: 502 });

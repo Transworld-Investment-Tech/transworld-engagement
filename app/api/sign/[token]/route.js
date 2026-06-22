@@ -11,6 +11,7 @@ import {
 } from "@/lib/documentsServer";
 import { sendEmail } from "@/lib/email";
 import { otpEmail, completionEmail, officerNudgeEmail, formatLagos } from "@/lib/documents";
+import { formatSignDate } from "@/lib/pdfFields";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -61,7 +62,7 @@ export async function GET(req, { params }) {
   if (sig.status === "signed") {
     return NextResponse.json({
       state: "signed",
-      document: { title: doc.title, status: doc.status },
+      document: { title: doc.title, status: doc.status, kind: doc.kind || "signature" },
       signer: { name: sig.name },
     });
   }
@@ -87,11 +88,23 @@ export async function GET(req, { params }) {
     /* viewer will show a fallback message */
   }
 
+  // The fields the client fills in-document (placed by staff). Positions are in
+  // PDF points, bottom-left origin. Only placed fields (with coordinates) are
+  // returned; the signer renders the PDF through the same-origin file proxy.
+  const { data: fields } = await supabase
+    .from("signature_fields")
+    .select("id,field_type,label,required,page,pos_x,pos_y,width,height,sort_order")
+    .eq("document_id", doc.id)
+    .eq("signatory_role", "client")
+    .order("sort_order", { ascending: true });
+
   return NextResponse.json({
     state: "ready",
-    document: { title: doc.title, status: doc.status },
+    document: { title: doc.title, status: doc.status, kind: doc.kind || "signature" },
     signer: { name: sig.name, email: sig.email },
     viewUrl,
+    fileUrl: `/api/sign/${params.token}/file`,
+    fields: (fields || []).filter((f) => Number.isFinite(Number(f.pos_x))),
     requiresOtp: true,
     expiresLabel: formatLagos(sig.token_expires_at),
   });
@@ -199,6 +212,33 @@ export async function POST(req, { params }) {
     if (!consent) return NextResponse.json({ error: "Please tick the consent box to sign." }, { status: 400 });
     if (!signatureData) return NextResponse.json({ error: "Please provide your signature." }, { status: 400 });
 
+    // Collect and validate the in-document field values the client entered.
+    // Date fields are filled server-side with today's date (Africa/Lagos) — the
+    // signer cannot set them. Required text/initial fields must be completed.
+    const { data: cfields } = await supabase
+      .from("signature_fields")
+      .select("id,field_type,label,required")
+      .eq("document_id", doc.id)
+      .eq("signatory_role", "client");
+    const incoming =
+      body.field_values && typeof body.field_values === "object" ? body.field_values : {};
+    const today = formatSignDate(new Date());
+    const fieldUpdates = [];
+    for (const f of cfields || []) {
+      if (f.field_type === "date") {
+        fieldUpdates.push({ id: f.id, value: today });
+      } else if (f.field_type === "text" || f.field_type === "initial") {
+        const v = String(incoming[f.id] == null ? "" : incoming[f.id]).trim().slice(0, 500);
+        if (f.required && !v) {
+          return NextResponse.json(
+            { error: `Please complete the field: ${f.label || "required field"}.` },
+            { status: 400 }
+          );
+        }
+        fieldUpdates.push({ id: f.id, value: v });
+      }
+    }
+
     const { error: upErr } = await supabase
       .from("signatories")
       .update({
@@ -215,6 +255,11 @@ export async function POST(req, { params }) {
       })
       .eq("id", sig.id);
     if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+
+    // Persist the entered/auto field values (small N — one update each).
+    for (const u of fieldUpdates) {
+      await supabase.from("signature_fields").update({ value: u.value }).eq("id", u.id);
+    }
 
     await logEvent({
       document_id: doc.id,
@@ -261,7 +306,11 @@ export async function POST(req, { params }) {
       );
     }
     if (completed) {
-      const { subject, html } = completionEmail({ signerName: sig.name, documentTitle: doc.title });
+      const { subject, html } = completionEmail({
+        signerName: sig.name,
+        documentTitle: doc.title,
+        kind: doc.kind,
+      });
       const attachments =
         finalizeRes && finalizeRes.signedBytes
           ? [

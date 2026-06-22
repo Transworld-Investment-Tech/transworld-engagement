@@ -6,6 +6,7 @@ import Link from "next/link";
 import SignaturePad from "@/components/SignaturePad";
 import {
   DOCUMENT_STATUS_LABELS,
+  DOCUMENT_KIND_LABELS,
   SIGNATORY_STATUS_LABELS,
   formatLagos,
   shortRef,
@@ -93,6 +94,7 @@ export default function DocumentDetailClient({ id, canManage, canDelete, current
   if (!data) return <div className="card p-8 text-center text-sm text-muted">Loading…</div>;
 
   const { document: doc, signatories, events } = data;
+  const fields = data.fields || [];
   const turn = nextSignatory(signatories);
   const officer = signatories.find((s) => s.role === "officer");
   const officerTurn = turn && turn.role === "officer";
@@ -123,6 +125,14 @@ export default function DocumentDetailClient({ id, canManage, canDelete, current
             {doc.original_filename} · created {formatLagos(doc.created_at)}
             {doc.expires_at ? ` · expires ${formatLagos(doc.expires_at)}` : ""}
           </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="chip">{DOCUMENT_KIND_LABELS[doc.kind] || "For signature"}</span>
+            {fields.length > 0 && (
+              <span className="chip">
+                {fields.length} field{fields.length === 1 ? "" : "s"} placed
+              </span>
+            )}
+          </div>
         </div>
         <span
           className={
@@ -289,7 +299,9 @@ export default function DocumentDetailClient({ id, canManage, canDelete, current
                 {busy === "download"
                   ? "Preparing…"
                   : doc.status === "completed"
-                  ? "Download signed PDF"
+                  ? doc.kind === "acceptance"
+                    ? "Download accepted PDF"
+                    : "Download signed PDF"
                   : "Download original"}
               </button>
 

@@ -14,7 +14,8 @@ export default async function NewDocumentPage() {
         <div className="eyebrow">Documents</div>
         <h1 className="mt-1 font-serif text-3xl text-ink">New document</h1>
         <p className="mt-1 text-sm text-muted">
-          Upload a PDF, choose who signs, and we will prepare it for signing.
+          Upload a PDF, place the fields the client fills, choose who signs, and we will prepare it
+          for signing or acceptance.
         </p>
       </div>
       <DocumentUploadForm currentUser={{ id: user.id, name: user.name, email: user.email }} />

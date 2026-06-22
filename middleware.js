@@ -14,6 +14,7 @@ export async function middleware(req) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
+    pathname.startsWith("/pdf.worker") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/cron") ||
     pathname.startsWith("/sign") ||

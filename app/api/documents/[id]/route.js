@@ -34,10 +34,17 @@ export async function GET(_req, { params }) {
     .eq("document_id", params.id)
     .order("created_at", { ascending: true });
 
+  const { data: fields } = await supabase
+    .from("signature_fields")
+    .select("id,signatory_role,field_type,label,required,page,sort_order")
+    .eq("document_id", params.id)
+    .order("sort_order", { ascending: true });
+
   return NextResponse.json({
     document,
     signatories: signatories || [],
     events: events || [],
+    fields: fields || [],
   });
 }
 

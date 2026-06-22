@@ -9,6 +9,7 @@ import {
   requestMeta,
 } from "@/lib/documentsServer";
 import { DEFAULT_EXPIRY_DAYS } from "@/lib/documents";
+import { sanitizeField } from "@/lib/pdfFields";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -80,10 +81,25 @@ export async function POST(req) {
   const file = form.get("file");
   const title = String(form.get("title") || "").trim();
   const contactId = String(form.get("contact_id") || "").trim();
-  const requiresCounter = String(form.get("requires_countersignature") || "true") !== "false";
-  const officerUserId = String(form.get("officer_user_id") || "").trim() || null;
+  const kind = String(form.get("kind") || "signature") === "acceptance" ? "acceptance" : "signature";
+  // Acceptance documents are client-only: no officer countersignature.
+  const requiresCounter =
+    kind === "acceptance"
+      ? false
+      : String(form.get("requires_countersignature") || "true") !== "false";
+  const officerUserId =
+    kind === "acceptance" ? null : String(form.get("officer_user_id") || "").trim() || null;
   const expiresInDays =
     parseInt(String(form.get("expires_in_days") || ""), 10) || DEFAULT_EXPIRY_DAYS;
+
+  // Staff-placed fields (JSON). Sanitized; invalid entries are dropped.
+  let placedFields = [];
+  try {
+    const raw = JSON.parse(String(form.get("fields") || "[]"));
+    if (Array.isArray(raw)) placedFields = raw.map((f) => sanitizeField(f)).filter(Boolean);
+  } catch {
+    placedFields = [];
+  }
 
   if (!title) return NextResponse.json({ error: "A document title is required" }, { status: 400 });
   if (!file || typeof file === "string") {
@@ -142,6 +158,7 @@ export async function POST(req) {
       status: "draft",
       contact_id: contact.id,
       requires_countersignature: requiresCounter,
+      kind,
       created_by: user.id,
       expires_at: expiresAt,
     })
@@ -185,6 +202,14 @@ export async function POST(req) {
   const { error: sigErr } = await supabase.from("signatories").insert(rows);
   if (sigErr) return NextResponse.json({ error: sigErr.message }, { status: 500 });
 
+  // 3b) placed fields (if any) — the field registry the client fills in-document.
+  if (placedFields.length) {
+    const { error: fErr } = await supabase
+      .from("signature_fields")
+      .insert(placedFields.map((f) => ({ document_id: doc.id, signatory_role: f.role, field_type: f.field_type, label: f.label, required: f.required, sort_order: f.sort_order, page: f.page, pos_x: f.pos_x, pos_y: f.pos_y, width: f.width, height: f.height })));
+    if (fErr) return NextResponse.json({ error: fErr.message }, { status: 500 });
+  }
+
   // 4) audit: created.
   const meta = requestMeta(req);
   await logEvent({
@@ -193,7 +218,12 @@ export async function POST(req) {
     actor: user.email,
     ip: meta.ip,
     user_agent: meta.user_agent,
-    metadata: { original_sha256: originalHash, requires_countersignature: requiresCounter },
+    metadata: {
+      original_sha256: originalHash,
+      requires_countersignature: requiresCounter,
+      kind,
+      field_count: placedFields.length,
+    },
   });
 
   return NextResponse.json({ id: doc.id });

@@ -100,6 +100,8 @@ create table if not exists documents (
                               check (status in ('draft','sent','partially_signed','completed','voided','expired')),
   contact_id                uuid references contacts(id) on delete set null,  -- the client signer
   requires_countersignature boolean not null default true,  -- most documents = true
+  kind                      text not null default 'signature'
+                              check (kind in ('signature','acceptance')),  -- proposal acceptance vs signing
   sha256_hash               text,          -- hash of the final signed PDF (tamper-evidence)
   created_by                uuid references app_users(id),
   created_at                timestamptz not null default now(),
@@ -148,11 +150,15 @@ create table if not exists signature_fields (
   signatory_role  text not null check (signatory_role in ('client','officer')),
   field_type      text not null default 'signature'
                     check (field_type in ('signature','date','initial','text')),
+  label           text,                        -- prompt shown to the signer / on the box
+  required        boolean not null default false,
+  value           text,                        -- the entered text/date value (not for signatures)
+  sort_order      int not null default 0,
   page            int  not null default 1,
-  pos_x           double precision not null,   -- PDF point coordinates
-  pos_y           double precision not null,
-  width           double precision not null,
-  height          double precision not null,
+  pos_x           double precision,            -- PDF point coordinates, bottom-left origin
+  pos_y           double precision,            -- (nullable: a future computed-only field has none)
+  width           double precision,
+  height          double precision,
   created_at      timestamptz not null default now()
 );
 
