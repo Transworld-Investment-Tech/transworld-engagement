@@ -102,9 +102,10 @@ export async function POST(req, { params }) {
 
   // Finalize (all signed → assemble, hash, store, complete).
   let completed = false;
+  let finalizeRes = null;
   try {
-    const res = await finalizeIfComplete(params.id);
-    completed = res.completed;
+    finalizeRes = await finalizeIfComplete(params.id);
+    completed = finalizeRes.completed;
   } catch (e) {
     return NextResponse.json(
       { ok: true, warning: "Signed, but finalizing the PDF failed: " + e.message },
@@ -112,12 +113,21 @@ export async function POST(req, { params }) {
     );
   }
 
-  // Notify the client their document is fully executed.
+  // Notify the client their document is fully executed, with the signed PDF attached.
   if (completed) {
     const client = (sigs || []).find((s) => s.role === "client");
     if (client && client.email) {
       const { subject, html } = completionEmail({ signerName: client.name, documentTitle: document.title });
-      await sendEmail({ to: client.email, subject, html });
+      const attachments =
+        finalizeRes && finalizeRes.signedBytes
+          ? [
+              {
+                filename: finalizeRes.filename,
+                content: Buffer.from(finalizeRes.signedBytes).toString("base64"),
+              },
+            ]
+          : undefined;
+      await sendEmail({ to: client.email, subject, html, attachments });
     }
   }
 

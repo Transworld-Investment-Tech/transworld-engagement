@@ -16,17 +16,38 @@ say()  { printf "\n\033[1;34m▸ %s\033[0m\n" "$1"; }
 ok()   { printf "  \033[0;32m✓ %s\033[0m\n" "$1"; }
 die()  { printf "\n\033[0;31m✗ %s\033[0m\n" "$1" >&2; exit 1; }
 
-# --- 1. Load + validate config --------------------------------------------
-[ -f deploy.config ] || die "No deploy.config found. Copy deploy.config.example to deploy.config and fill it in."
+# --- 1. Locate + load config ----------------------------------------------
+# No per-release editing or copying. The config is found automatically in
+# priority order, so you fill ONE master copy in your home folder once
+# (~/transworld-deploy.config) and never touch it again — the /tmp wipe on each
+# release can't reach it.
+CONFIG=""
+for candidate in \
+  "${TRANSWORLD_DEPLOY_CONFIG:-}" \
+  "./deploy.config" \
+  "$HOME/transworld-deploy.config" \
+  "$HOME/.config/transworld/deploy.config"; do
+  if [ -n "$candidate" ] && [ -f "$candidate" ]; then CONFIG="$candidate"; break; fi
+done
+[ -n "$CONFIG" ] || die "No config found. Create ~/transworld-deploy.config from deploy.config.example (once)."
 # shellcheck disable=SC1091
-source ./deploy.config
+source "$CONFIG"
 
-require() { [ -n "${!1:-}" ] || die "Missing $1 in deploy.config"; }
+require() { [ -n "${!1:-}" ] || die "Missing $1 in $CONFIG"; }
 require SUPABASE_URL
 require SUPABASE_SERVICE_ROLE_KEY
 require JWT_SECRET
-require GIT_REMOTE
-ok "Config loaded"
+# GIT_REMOTE defaults to the known repo, so it need not live in the config.
+GIT_REMOTE="${GIT_REMOTE:-https://github.com/Transworld-Investment-Tech/transworld-engagement.git}"
+ok "Config loaded from $CONFIG"
+
+# Deploy message is derived from package.json — never hand-edited, so the label
+# always matches the release. An optional argument adds a note:
+#   ./deploy.sh "hotfix signing email"
+VERSION="$(node -p "require('./package.json').version" 2>/dev/null || echo "0.0.0")"
+NOTE="${1:-}"
+DEPLOY_MESSAGE="v${VERSION}${NOTE:+: $NOTE}"
+ok "Release ${DEPLOY_MESSAGE}"
 
 # --- 2. Write local .env.local (for npm run dev; NOT pushed) ---------------
 say "Writing .env.local"

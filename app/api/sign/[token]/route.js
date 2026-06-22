@@ -250,9 +250,10 @@ export async function POST(req, { params }) {
 
     // No countersignature → finalize immediately.
     let completed = false;
+    let finalizeRes = null;
     try {
-      const res = await finalizeIfComplete(doc.id);
-      completed = res.completed;
+      finalizeRes = await finalizeIfComplete(doc.id);
+      completed = finalizeRes.completed;
     } catch (e) {
       return NextResponse.json(
         { ok: true, completed: false, warning: "Signed, but finalizing failed: " + e.message },
@@ -261,7 +262,16 @@ export async function POST(req, { params }) {
     }
     if (completed) {
       const { subject, html } = completionEmail({ signerName: sig.name, documentTitle: doc.title });
-      await sendEmail({ to: sig.email, subject, html });
+      const attachments =
+        finalizeRes && finalizeRes.signedBytes
+          ? [
+              {
+                filename: finalizeRes.filename,
+                content: Buffer.from(finalizeRes.signedBytes).toString("base64"),
+              },
+            ]
+          : undefined;
+      await sendEmail({ to: sig.email, subject, html, attachments });
     }
     return NextResponse.json({ ok: true, completed });
   }
