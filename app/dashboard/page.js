@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { getSupabase } from "@/lib/supabaseServer";
+import { lagosToday, isBirthdayThisMonth, isBirthdayWithinDays } from "@/lib/greetings";
 import AppShell from "@/components/AppShell";
 
 export const dynamic = "force-dynamic";
@@ -13,46 +14,49 @@ async function getStats() {
     .select("id", { count: "exact", head: true })
     .eq("status", "active");
 
-  // Birthdays — pull DoBs and compute in JS (small directory).
+  // Birthdays — pull DoBs and compute in JS (small directory). The same
+  // predicates back the contacts birthday filter, so each card's number matches
+  // the list it surfaces.
   const { data: dobs } = await supabase
     .from("contacts")
     .select("date_of_birth")
     .eq("status", "active")
     .not("date_of_birth", "is", null);
 
-  const now = new Date();
-  const todayMD = (now.getMonth() + 1) * 100 + now.getDate();
-  const thisMonth = now.getMonth() + 1;
+  const today = lagosToday();
   let thisMonthCount = 0;
   let next7 = 0;
-
   (dobs || []).forEach((r) => {
-    const d = new Date(r.date_of_birth + "T00:00:00");
-    if (Number.isNaN(d.getTime())) return;
-    const m = d.getMonth() + 1;
-    if (m === thisMonth) thisMonthCount += 1;
-    // next 7 days window (month/day only)
-    for (let i = 0; i < 7; i++) {
-      const t = new Date(now);
-      t.setDate(now.getDate() + i);
-      if (t.getMonth() + 1 === m && t.getDate() === d.getDate()) {
-        next7 += 1;
-        break;
-      }
-    }
+    if (isBirthdayThisMonth(r.date_of_birth, today)) thisMonthCount += 1;
+    if (isBirthdayWithinDays(r.date_of_birth, 7, today)) next7 += 1;
   });
 
-  return { active: activeCount || 0, thisMonth: thisMonthCount, next7, todayMD };
+  return { active: activeCount || 0, thisMonth: thisMonthCount, next7 };
 }
 
-function Stat({ label, value, hint }) {
-  return (
-    <div className="card p-5">
-      <div className="eyebrow">{label}</div>
+function Stat({ label, value, hint, href }) {
+  const body = (
+    <>
+      <div className="flex items-start justify-between">
+        <div className="eyebrow">{label}</div>
+        {href && (
+          <span className="text-xs font-medium text-navy-700 opacity-0 transition-opacity group-hover:opacity-100">
+            View →
+          </span>
+        )}
+      </div>
       <div className="mt-2 font-serif text-3xl text-navy">{value}</div>
       {hint && <div className="mt-1 text-xs text-muted">{hint}</div>}
-    </div>
+    </>
   );
+  if (href) {
+    return (
+      <Link href={href} className="card group p-5 transition-shadow hover:shadow-md">
+        {body}
+      </Link>
+    );
+  }
+  return <div className="card p-5">{body}</div>;
 }
 
 export default async function Dashboard() {
@@ -69,9 +73,19 @@ export default async function Dashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Active contacts" value={stats.active} hint="In your directory" />
-        <Stat label="Birthdays this month" value={stats.thisMonth} hint="Active contacts" />
-        <Stat label="Birthdays next 7 days" value={stats.next7} hint="Ready to greet" />
+        <Stat label="Active contacts" value={stats.active} hint="In your directory" href="/contacts" />
+        <Stat
+          label="Birthdays this month"
+          value={stats.thisMonth}
+          hint="Active contacts · view list"
+          href="/contacts?birthday=month"
+        />
+        <Stat
+          label="Birthdays next 7 days"
+          value={stats.next7}
+          hint="Ready to greet · view list"
+          href="/contacts?birthday=week"
+        />
       </div>
 
       <h2 className="mb-3 mt-10 font-serif text-xl text-ink">Modules</h2>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabaseServer";
 import { getCurrentUser, hasRole } from "@/lib/session";
+import { lagosToday, monthDay, daysUntil, isBirthdayThisMonth, isBirthdayWithinDays } from "@/lib/greetings";
 
 function cleanContact(input) {
   const errors = [];
@@ -46,6 +47,8 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") || "").trim();
   const status = searchParams.get("status");
+  const birthday = searchParams.get("birthday"); // 'week' | 'month'
+  const birthdayFilter = birthday === "week" || birthday === "month";
 
   let query = supabase
     .from("contacts")
@@ -55,6 +58,10 @@ export async function GET(req) {
 
   if (status === "active" || status === "inactive") {
     query = query.eq("status", status);
+  }
+  // A birthday view only makes sense for contacts that have a date of birth.
+  if (birthdayFilter) {
+    query = query.not("date_of_birth", "is", null);
   }
   if (q) {
     query = query.or(
@@ -66,7 +73,27 @@ export async function GET(req) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json({ contacts: data });
+
+  // Birthday windows are computed month/day only (year ignored), in Africa/Lagos,
+  // using the same predicates as the dashboard cards — then sorted soonest-first.
+  let contacts = data || [];
+  if (birthdayFilter) {
+    const today = lagosToday();
+    contacts = contacts
+      .filter((c) =>
+        birthday === "month"
+          ? isBirthdayThisMonth(c.date_of_birth, today)
+          : isBirthdayWithinDays(c.date_of_birth, 7, today)
+      )
+      .sort((a, b) => {
+        const ma = monthDay(a.date_of_birth);
+        const mb = monthDay(b.date_of_birth);
+        if (birthday === "month") return (ma.day || 0) - (mb.day || 0);
+        return daysUntil(today, ma.month, ma.day) - daysUntil(today, mb.month, mb.day);
+      });
+  }
+
+  return NextResponse.json({ contacts });
 }
 
 export async function POST(req) {

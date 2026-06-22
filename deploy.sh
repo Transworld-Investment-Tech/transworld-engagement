@@ -42,10 +42,12 @@ GIT_REMOTE="${GIT_REMOTE:-https://github.com/Transworld-Investment-Tech/transwor
 ok "Config loaded from $CONFIG"
 
 # Deploy message is derived from package.json — never hand-edited, so the label
-# always matches the release. An optional argument adds a note:
-#   ./deploy.sh "hotfix signing email"
+# always matches the release. It uses the "releaseNote" field set when you bump
+# the version (so the description is written once, in the same edit). An optional
+# argument overrides it for a one-off:   ./deploy.sh "hotfix signing email"
 VERSION="$(node -p "require('./package.json').version" 2>/dev/null || echo "0.0.0")"
-NOTE="${1:-}"
+RELEASE_NOTE="$(node -p "require('./package.json').releaseNote || ''" 2>/dev/null || echo "")"
+NOTE="${1:-$RELEASE_NOTE}"
 DEPLOY_MESSAGE="v${VERSION}${NOTE:+: $NOTE}"
 ok "Release ${DEPLOY_MESSAGE}"
 

@@ -12,22 +12,23 @@ function formatDob(d) {
   return dt.toLocaleDateString("en-US", { day: "numeric", month: "short" });
 }
 
-export default function ContactsClient({ canEdit, canDelete }) {
+export default function ContactsClient({ canEdit, canDelete, initialStatus = "active", initialBirthday = "" }) {
   const router = useRouter();
   const [contacts, setContacts] = useState([]);
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState("active");
+  const [status, setStatus] = useState(initialStatus);
+  const [birthday, setBirthday] = useState(initialBirthday);
   const [loading, setLoading] = useState(true);
   const [importOpen, setImportOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const url = `/api/contacts?q=${encodeURIComponent(q)}&status=${status}`;
+    const url = `/api/contacts?q=${encodeURIComponent(q)}&status=${status}&birthday=${birthday}`;
     const res = await fetch(url);
     const data = await res.json();
     setContacts(data.contacts || []);
     setLoading(false);
-  }, [q, status]);
+  }, [q, status, birthday]);
 
   useEffect(() => {
     const t = setTimeout(load, 200);
@@ -75,7 +76,30 @@ export default function ContactsClient({ canEdit, canDelete }) {
           <option value="inactive">Inactive</option>
           <option value="all">All</option>
         </select>
+        <select className="field max-w-[200px]" value={birthday} onChange={(e) => setBirthday(e.target.value)}>
+          <option value="">Any birthday</option>
+          <option value="week">Birthday in next 7 days</option>
+          <option value="month">Birthday this month</option>
+        </select>
       </div>
+
+      {birthday && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gold-200 bg-gold-50 px-4 py-2.5 text-sm text-navy">
+          <span>
+            Showing contacts with a{" "}
+            <strong>{birthday === "week" ? "birthday in the next 7 days" : "birthday this month"}</strong>
+            , soonest first.
+          </span>
+          <div className="flex items-center gap-3">
+            <Link href="/greetings/birthdays" className="font-medium text-navy-700 hover:text-navy">
+              Open birthday queue →
+            </Link>
+            <button onClick={() => setBirthday("")} className="font-medium text-navy-700 underline">
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="card overflow-hidden">
         <table className="w-full text-sm">

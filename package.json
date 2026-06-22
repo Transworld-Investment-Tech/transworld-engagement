@@ -1,6 +1,7 @@
 {
   "name": "transworld-engagement",
-  "version": "1.5.0",
+  "version": "1.6.0",
+  "releaseNote": "dashboard — clickable stat cards surface active contacts and the birthday lists behind them",
   "private": true,
   "scripts": {
     "dev": "next dev",
