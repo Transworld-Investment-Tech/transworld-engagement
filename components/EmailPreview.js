@@ -5,7 +5,7 @@ export default function EmailPreview({ html, height = 520 }) {
     <iframe
       title="Email preview"
       srcDoc={html}
-      sandbox=""
+      sandbox="allow-same-origin"
       className="w-full rounded-lg border border-line bg-white"
       style={{ height }}
     />

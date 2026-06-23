@@ -1,7 +1,7 @@
 {
   "name": "transworld-engagement",
-  "version": "1.7.1",
-  "releaseNote": "greetings — birthday card in the in-app preview now loads from the app's own origin, so the preview never shows a broken card during a deploy; the sent email keeps the absolute URL",
+  "version": "1.7.2",
+  "releaseNote": "greetings — revert the code-injected birthday card to the original text template; fix the email preview iframe (sandbox allow-same-origin) so template-embedded images render. Card art retained as a brand asset for an opt-in image template.",
   "private": true,
   "scripts": {
     "dev": "next dev",

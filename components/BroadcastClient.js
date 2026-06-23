@@ -23,7 +23,7 @@ export default function BroadcastClient({ templates, suggestedTags }) {
   const filter = useMemo(() => ({ status, tags, match }), [status, tags, match]);
 
   const preview = useMemo(
-    () => (template ? renderGreeting(template, SAMPLE, { assetBase: "" }).html : ""),
+    () => (template ? renderGreeting(template, SAMPLE).html : ""),
     [template]
   );
 
