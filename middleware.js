@@ -27,6 +27,11 @@ export async function middleware(req) {
   // PAGE is already public (it's under /research and not /research/admin).
   const isPublicResearchUnsub = pathname.startsWith("/api/research/unsubscribe");
 
+  // The Resend webhook. Public but self-securing: every request is verified
+  // against RESEND_WEBHOOK_SECRET via the svix signature before anything is
+  // read or written. Resend carries no session cookie.
+  const isPublicResearchWebhook = pathname.startsWith("/api/research/webhooks/");
+
   // Allow Next internals, static assets, and the login + auth endpoints.
   // `/sign` and `/api/sign` are the client signing flow: clients are not staff
   // and have no session, so these are public and secure THEMSELVES via the
@@ -43,6 +48,7 @@ export async function middleware(req) {
     isPublicResearch ||
     isPublicResearchPdf ||
     isPublicResearchUnsub ||
+    isPublicResearchWebhook ||
     PUBLIC.includes(pathname)
   ) {
     return NextResponse.next();

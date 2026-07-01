@@ -1,12 +1,17 @@
 import Link from 'next/link';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { fetchAdminReportSummaries } from '@/lib/research/reports';
+import { getSentIndicatorByReportId } from '@/lib/research/analytics';
 import { ReportsTable } from '@/components/research/admin/ReportsTable';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminReportsPage() {
-  const summaries = await fetchAdminReportSummaries();
+  const [summaries, sentMap] = await Promise.all([
+    fetchAdminReportSummaries(),
+    getSentIndicatorByReportId(),
+  ]);
+  const sentInfo = Object.fromEntries(sentMap);
 
   return (
     <div>
@@ -65,7 +70,7 @@ export default async function AdminReportsPage() {
         </Link>
       </div>
 
-      <ReportsTable summaries={summaries} />
+      <ReportsTable summaries={summaries} sentInfo={sentInfo} />
     </div>
   );
 }

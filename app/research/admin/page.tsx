@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { fetchAdminReportSummaries } from '@/lib/research/reports';
 import { countActiveSubscribers } from '@/lib/research/subscriptions';
+import { listCampaigns } from '@/lib/research/analytics';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,12 +32,14 @@ function fmtDate(iso: string | null): string {
 }
 
 export default async function ResearchDashboardPage() {
-  const [summaries, activeSubscribers] = await Promise.all([
+  const [summaries, activeSubscribers, campaigns] = await Promise.all([
     fetchAdminReportSummaries(),
     countActiveSubscribers(),
+    listCampaigns(),
   ]);
   const published = summaries.filter((s) => s.report.status === 'published');
   const drafts = summaries.filter((s) => s.report.status === 'draft');
+  const lastCampaign = campaigns[0] ?? null;
 
   const latest = [...published].sort((a, b) => {
     const ax = new Date(a.report.published_at ?? a.report.updated_at).getTime();
@@ -70,7 +73,7 @@ export default async function ResearchDashboardPage() {
           style={{ color: MUTED, fontSize: 16, lineHeight: 1.6, maxWidth: 560 }}
         >
           The state of the research desk. Create, edit, and publish the weekly NGX
-          market report — sending to subscribers arrives in Phase&nbsp;2.
+          market report, send it to subscribers, and track how each campaign lands.
         </p>
       </div>
 
@@ -96,10 +99,13 @@ export default async function ResearchDashboardPage() {
         />
         <StatCard
           label="Last campaign"
-          value="—"
-          sub="Coming in Phase 2"
+          value={lastCampaign ? String(lastCampaign.recipients) : '—'}
+          sub={
+            lastCampaign
+              ? `${lastCampaign.opened} opened · ${fmtDate(lastCampaign.sent_at)}`
+              : 'None sent yet'
+          }
           icon={<Send size={16} />}
-          soon
         />
       </div>
 
@@ -136,10 +142,10 @@ export default async function ResearchDashboardPage() {
           soon
         />
         <ActionCard
+          href="/research/admin/analytics"
           title="Email analytics"
-          desc="Open rates, click rates, and list health."
+          desc="Delivery, open and click rates, and list health."
           icon={<BarChart3 size={18} />}
-          soon
         />
       </div>
     </div>

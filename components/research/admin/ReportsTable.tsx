@@ -6,9 +6,10 @@ import { Pencil, Eye, Trash2, Send } from 'lucide-react';
 import { deleteReportAction } from '@/app/research/admin/reports/actions';
 import type { ReportSummary } from '@/lib/research/types';
 
-// Phase 1 is the read side — no email is sent from it, so the reports table
-// carries no "Sent" analytics column. That column and its data source return
-// with the Phase 2 send side.
+// The reports table shows a lightweight "Sent" indicator (date + recipient
+// count) under the headline for any report that has been sent at least once.
+// The data comes from getSentIndicatorByReportId(), passed as a plain object
+// (Maps don't cross the server/client boundary).
 
 function formatPeriod(start: string, end: string): string {
   const s = new Date(start);
@@ -35,9 +36,19 @@ function formatUpdated(iso: string): string {
 
 interface ReportsTableProps {
   summaries: ReportSummary[];
+  sentInfo?: Record<string, { sent_at: string; recipients: number }>;
 }
 
-export function ReportsTable({ summaries }: ReportsTableProps) {
+function formatSent(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'Africa/Lagos',
+  });
+}
+
+export function ReportsTable({ summaries, sentInfo = {} }: ReportsTableProps) {
   const [pending, startTransition] = useTransition();
 
   if (summaries.length === 0) {
@@ -120,6 +131,11 @@ export function ReportsTable({ summaries }: ReportsTableProps) {
             >
               {report.headline}
             </span>
+            {sentInfo[report.id] && (
+              <div className="font-mono text-xs mt-0.5" style={{ color: '#0F5132', letterSpacing: '0.04em' }}>
+                Sent {formatSent(sentInfo[report.id].sent_at)} · {sentInfo[report.id].recipients}
+              </div>
+            )}
           </div>
           <div
             className="md:col-span-2 font-mono text-xs"

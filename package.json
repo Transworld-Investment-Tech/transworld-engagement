@@ -1,7 +1,7 @@
 {
   "name": "transworld-engagement",
-  "version": "1.12.0",
-  "releaseNote": "Research Phase 2b (send side — immediate broadcast): a Send page per published report (editorial sub-brand) that renders the weekly report to a branded email and sends it from investment@ to selected active subscribers, with a test-send-to-me, select-all / select-only-not-yet-sent, and a prior-send banner. Per-recipient delivery is tracked in send_log (queued -> sent/failed with the Resend id). Every email carries a working opt-out: a per-contact unsubscribe link plus RFC 8058 List-Unsubscribe headers, backed by a public token-gated /research/unsubscribe page and /api/research/unsubscribe endpoint that flip report_subscriptions to unsubscribed. A human clicks send, so the cron-never-mails-clients rule does not apply; scheduled sends, the Resend webhook, and analytics remain Phase 2c/2d. Ports the retired portal's email stack (template, render, dispatch, tokens) onto contacts/report_subscriptions. Adds @react-email/components and @react-email/render; no schema change, no new environment variables.",
+  "version": "1.13.0",
+  "releaseNote": "Research Phase 2c (delivery tracking + analytics): a Resend webhook at /api/research/webhooks/resend (public, svix-verified with RESEND_WEBHOOK_SECRET) records delivered/opened/clicked/bounced/complained/failed back to send_log by resend_id; a hard bounce flips the subscriber to bounced and a spam complaint auto-unsubscribes them (research channel only — soft bounces are left alone). An Email analytics area at /research/admin/analytics (editorial sub-brand) with a campaigns rollup, a per-recipient drill-in (filter by opened/clicked/bounced/failed), list-health cards, and a hand-rolled 12-week trends chart. The dashboard Last-campaign stat and Email-analytics tile go live, and the reports list shows a Sent date + recipient count per report. Adds svix (webhook signature verification); no charting dependency (the trends chart is inline SVG); no schema change (send_log and report_subscriptions already carry every needed column). Adds one environment variable, RESEND_WEBHOOK_SECRET, on this release.",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -26,6 +26,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "resend": "4.0.1",
+    "svix": "1.96.1",
     "zod": "4.4.3"
   },
   "devDependencies": {
