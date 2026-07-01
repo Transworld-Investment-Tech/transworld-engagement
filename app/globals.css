@@ -40,3 +40,16 @@ html, body {
            text-xs font-medium text-navy-700;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Research (editorial) surface — scoped type classes. (v1.8, Phase 0)
+   The CSS variables (--font-display / --font-body / --font-mono) are set ONLY
+   inside the research route group's layout — wired in Phase 1 via next/font —
+   so these classes fall back to the house serif / system stack everywhere else
+   and add zero font downloads to the internal Greetings / Documents pages.
+   Inert until Phase 1; harmless if applied (falls back to Georgia).
+   -------------------------------------------------------------------------- */
+.font-display { font-family: var(--font-display), Georgia, "Times New Roman", serif; }
+.font-body    { font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, sans-serif; }
+.font-mono    { font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace; font-feature-settings: "tnum"; }
+.num          { font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }

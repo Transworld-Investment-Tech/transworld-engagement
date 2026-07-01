@@ -1,7 +1,7 @@
 {
   "name": "transworld-engagement",
-  "version": "1.7.2",
-  "releaseNote": "greetings — revert the code-injected birthday card to the original text template; fix the email preview iframe (sandbox allow-same-origin) so template-embedded images render. Card art retained as a brand asset for an opt-in image template.",
+  "version": "1.8.0",
+  "releaseNote": "Phase 0 of the research-portal merge — TypeScript toolchain enabled inertly (allowJs on, checkJs off; all existing JS untouched and unchecked), scoped editorial font classes, and the research schema (reports + 5 child tables, send_log, send_jobs, report_subscriptions keyed to contacts, the two private report-pdfs buckets, and claim_due_send_jobs). Zero user-facing change; no runtime dependencies added.",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -22,8 +22,12 @@
     "resend": "4.0.1"
   },
   "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
     "autoprefixer": "10.4.19",
     "postcss": "8.4.39",
-    "tailwindcss": "3.4.7"
+    "tailwindcss": "3.4.7",
+    "typescript": "^5.6.3"
   }
 }

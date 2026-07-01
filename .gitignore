@@ -5,3 +5,7 @@ node_modules
 deploy.config
 .DS_Store
 npm-debug.log*
+
+# TypeScript (added v1.8 — auto-generated, never committed)
+next-env.d.ts
+*.tsbuildinfo
