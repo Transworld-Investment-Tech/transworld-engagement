@@ -329,6 +329,9 @@ create table if not exists report_subscriptions (
                       check (status in ('active','pending','unsubscribed','bounced')),
   unsubscribe_token text not null unique default encode(gen_random_bytes(16), 'hex'),
   unsubscribed_at   timestamptz,
+  -- Which staff member subscribed this contact (provenance for the opt-in).
+  -- on delete set null: removing a staff account never erases subscription history.
+  subscribed_by     uuid references app_users(id) on delete set null,
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
 );

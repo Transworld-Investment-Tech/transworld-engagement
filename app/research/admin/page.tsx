@@ -10,6 +10,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { fetchAdminReportSummaries } from '@/lib/research/reports';
+import { countActiveSubscribers } from '@/lib/research/subscriptions';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,10 @@ function fmtDate(iso: string | null): string {
 }
 
 export default async function ResearchDashboardPage() {
-  const summaries = await fetchAdminReportSummaries();
+  const [summaries, activeSubscribers] = await Promise.all([
+    fetchAdminReportSummaries(),
+    countActiveSubscribers(),
+  ]);
   const published = summaries.filter((s) => s.report.status === 'published');
   const drafts = summaries.filter((s) => s.report.status === 'draft');
 
@@ -86,10 +90,9 @@ export default async function ResearchDashboardPage() {
         />
         <StatCard
           label="Subscribers"
-          value="—"
-          sub="Coming in Phase 2"
+          value={String(activeSubscribers)}
+          sub={activeSubscribers === 1 ? '1 active' : `${activeSubscribers} active`}
           icon={<Users size={16} />}
-          soon
         />
         <StatCard
           label="Last campaign"
@@ -121,10 +124,10 @@ export default async function ResearchDashboardPage() {
           icon={<ArrowRight size={18} />}
         />
         <ActionCard
+          href="/research/admin/subscribers"
           title="Manage subscribers"
-          desc="Reader list and CSV import."
+          desc="Subscribe clients from the directory and set tiers."
           icon={<Users size={18} />}
-          soon
         />
         <ActionCard
           title="Scheduled sends"

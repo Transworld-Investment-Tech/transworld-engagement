@@ -1,7 +1,7 @@
 {
   "name": "transworld-engagement",
-  "version": "1.10.0",
-  "releaseNote": "Research admin polish: a dashboard landing at the Research nav (published/draft counts, latest report, quick actions) with Add-new-report (upload PDF or blank draft) and Manage-reports live, and the send-side tiles (subscribers, last campaign, scheduled sends, email analytics) shown as grayed Coming-in-Phase-2 placeholders. Fixes the missing upload-PDF entry point. Dresses the research admin in the editorial sub-brand (Fraunces / IBM Plex Mono, navy ink) to match the public research site, with those fonts still scoped to the research route group only. No schema or dependency changes.",
+  "version": "1.11.0",
+  "releaseNote": "Research Phase 2a (subscription management, DB + UI only, no email): a Manage-subscribers roster at /research/admin/subscribers (editorial sub-brand) that subscribes clients from the shared Contacts directory via a multi-select picker, adds a not-yet-in-Contacts person (creating the contact first; de-dupes on email), edits tier, soft-unsubscribes/re-subscribes, and (admin only) hard-removes a subscription; a quick research on/off toggle on the individual contact record in Contacts (house style); the research dashboard Subscribers stat and Manage-subscribers tile go live while the remaining send-side tiles stay grayed. Adds subscribed_by provenance to report_subscriptions (one additive, idempotent migration). Research subscription status stays per-channel: it never affects Greetings or Documents. No new dependencies.",
   "private": true,
   "scripts": {
     "dev": "next dev",
