@@ -1,7 +1,7 @@
 {
   "name": "transworld-engagement",
-  "version": "1.13.0",
-  "releaseNote": "Research Phase 2c (delivery tracking + analytics): a Resend webhook at /api/research/webhooks/resend (public, svix-verified with RESEND_WEBHOOK_SECRET) records delivered/opened/clicked/bounced/complained/failed back to send_log by resend_id; a hard bounce flips the subscriber to bounced and a spam complaint auto-unsubscribes them (research channel only — soft bounces are left alone). An Email analytics area at /research/admin/analytics (editorial sub-brand) with a campaigns rollup, a per-recipient drill-in (filter by opened/clicked/bounced/failed), list-health cards, and a hand-rolled 12-week trends chart. The dashboard Last-campaign stat and Email-analytics tile go live, and the reports list shows a Sent date + recipient count per report. Adds svix (webhook signature verification); no charting dependency (the trends chart is inline SVG); no schema change (send_log and report_subscriptions already carry every needed column). Adds one environment variable, RESEND_WEBHOOK_SECRET, on this release.",
+  "version": "1.13.1",
+  "releaseNote": "Research Phase 2c hotfix: the Resend webhook now suppresses a subscriber on a real hard bounce. Resend labels a permanent bounce type='Permanent' (with a soft bounce type='Transient'), not 'hard' — so the previous check logged the bounce on send_log but never flipped report_subscriptions to 'bounced'. The bounce match is now case-insensitive on 'permanent' (accepting 'hard' too); transient/soft bounces are still left alone for Resend to retry. Webhook-only change; no schema, dependency, or environment change.",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -37,7 +37,7 @@ interface ResendEvent {
     to?: string[] | string;
     from?: string;
     subject?: string;
-    bounce?: { type?: 'hard' | 'soft'; message?: string; subType?: string };
+    bounce?: { type?: string; message?: string; subType?: string };
     click?: { link?: string; timestamp?: string };
   };
 }
@@ -110,7 +110,10 @@ export async function POST(req: NextRequest) {
       break;
 
     case 'email.bounced': {
-      const bounceType = event.data.bounce?.type;
+      // Resend/SES report a permanent (hard) bounce as type "Permanent" and a
+      // transient (soft) bounce as "Transient". Match case-insensitively, and
+      // accept "hard" too, defensively.
+      const bounceType = (event.data.bounce?.type ?? '').toLowerCase();
       await supabase
         .from('send_log')
         .update({
@@ -120,8 +123,9 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', row.id);
 
-      // Hard bounce → stop sending to this subscriber. Soft bounces left alone.
-      if (bounceType === 'hard' && row.contact_id) {
+      // Permanent/hard bounce → stop sending to this subscriber. Transient
+      // (soft) bounces are left alone for Resend to retry.
+      if ((bounceType === 'permanent' || bounceType === 'hard') && row.contact_id) {
         await supabase
           .from('report_subscriptions')
           .update({ status: 'bounced' })
