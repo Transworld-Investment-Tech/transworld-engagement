@@ -1,7 +1,7 @@
 {
   "name": "transworld-engagement",
-  "version": "1.9.0",
-  "releaseNote": "Phase 1 of the research-portal merge (read side, no email). Ports the weekly-report pipeline into the app behind Engagement auth: manager+ admin report list/detail, PDF upload -> Claude (claude-sonnet-4-6) parse -> manual editor, the public editorial report pages + archive at /research, and Puppeteer + Sparticuz Chromium PDF rendering (LD_LIBRARY_PATH / AWS_LAMBDA_JS_RUNTIME / setGraphicsMode fixes carried over). Down-ported Next 16 -> 14 and Tailwind v4 -> v3; editorial fonts load only inside the research route group. No schema changes (v1.8 landed it); no cron added (scheduled send is Phase 2). Adds runtime deps: @anthropic-ai/sdk, @sparticuz/chromium, puppeteer-core, zod, lucide-react.",
+  "version": "1.10.0",
+  "releaseNote": "Research admin polish: a dashboard landing at the Research nav (published/draft counts, latest report, quick actions) with Add-new-report (upload PDF or blank draft) and Manage-reports live, and the send-side tiles (subscribers, last campaign, scheduled sends, email analytics) shown as grayed Coming-in-Phase-2 placeholders. Fixes the missing upload-PDF entry point. Dresses the research admin in the editorial sub-brand (Fraunces / IBM Plex Mono, navy ink) to match the public research site, with those fonts still scoped to the research route group only. No schema or dependency changes.",
   "private": true,
   "scripts": {
     "dev": "next dev",

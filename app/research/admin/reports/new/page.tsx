@@ -15,11 +15,27 @@ export default function NewReportPage() {
       </Link>
 
       <div className="mb-10">
-        <div className="eyebrow">Research · New Report</div>
-        <h1 className="mt-1 font-serif text-3xl text-navy">
+        <div
+          className="font-mono"
+          style={{
+            fontSize: 11,
+            color: '#B08940',
+            letterSpacing: '0.22em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Research · New Report
+        </div>
+        <h1
+          className="font-display mt-2"
+          style={{ fontSize: 34, color: '#0A1F44', fontWeight: 600 }}
+        >
           Start a new weekly report
         </h1>
-        <p className="mt-3 text-base leading-relaxed text-muted" style={{ maxWidth: 540 }}>
+        <p
+          className="font-body mt-3"
+          style={{ fontSize: 16, lineHeight: 1.6, color: '#3A4A6B', maxWidth: 540 }}
+        >
           Upload your weekly PDF and Claude will extract the structured data into
           a new draft, ready for your review. Or start from a blank draft and
           fill it in manually.
@@ -43,10 +59,10 @@ export default function NewReportPage() {
         <div className="flex items-start gap-3">
           <FileText size={18} style={{ color: '#3A4A6B', marginTop: 2 }} />
           <div>
-            <div className="font-serif text-navy" style={{ fontSize: 16, fontWeight: 600 }}>
+            <div className="font-display" style={{ fontSize: 16, color: '#0A1F44', fontWeight: 600 }}>
               No PDF? Start from scratch.
             </div>
-            <div className="text-sm text-muted">
+            <div className="font-body text-sm" style={{ color: '#3A4A6B' }}>
               Create an empty draft and type everything in by hand.
             </div>
           </div>

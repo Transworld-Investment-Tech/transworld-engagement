@@ -19,7 +19,7 @@ export default function AppShell({ user, children }) {
   // that can actually use it; the /research/admin layout enforces this too.
   const canManageResearch = user?.role === "manager" || user?.role === "admin";
   const NAV = canManageResearch
-    ? [...BASE_NAV, { href: "/research/admin/reports", label: "Research" }]
+    ? [...BASE_NAV, { href: "/research/admin", label: "Research" }]
     : BASE_NAV;
 
   async function logout() {
