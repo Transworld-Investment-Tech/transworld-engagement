@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Wordmark from "./Wordmark";
 
-const NAV = [
+const BASE_NAV = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/contacts", label: "Contacts" },
   { href: "/greetings", label: "Greetings" },
@@ -14,6 +14,13 @@ const NAV = [
 export default function AppShell({ user, children }) {
   const pathname = usePathname();
   const router = useRouter();
+
+  // Research management is a manager+ surface. Only show the tab to accounts
+  // that can actually use it; the /research/admin layout enforces this too.
+  const canManageResearch = user?.role === "manager" || user?.role === "admin";
+  const NAV = canManageResearch
+    ? [...BASE_NAV, { href: "/research/admin/reports", label: "Research" }]
+    : BASE_NAV;
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });

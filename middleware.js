@@ -6,6 +6,21 @@ const PUBLIC = ["/login"];
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
 
+  // Public research site (client-facing, editorial). Everything under /research
+  // is public EXCEPT /research/admin, which is the staff report-management
+  // surface and stays behind the session gate below. The print route
+  // (/research/print/*) is public here but self-secures draft rendering with the
+  // PRINT_TOKEN header. /research/[slug] and /research/archive only ever read
+  // published rows.
+  const isPublicResearch =
+    pathname === "/research" ||
+    (pathname.startsWith("/research/") && !pathname.startsWith("/research/admin"));
+
+  // The public PDF download endpoint (published reports only). The admin PDF
+  // route lives at /api/research/admin/* and is NOT matched here, so it stays
+  // gated.
+  const isPublicResearchPdf = pathname.startsWith("/api/research/reports/");
+
   // Allow Next internals, static assets, and the login + auth endpoints.
   // `/sign` and `/api/sign` are the client signing flow: clients are not staff
   // and have no session, so these are public and secure THEMSELVES via the
@@ -19,6 +34,8 @@ export async function middleware(req) {
     pathname.startsWith("/api/cron") ||
     pathname.startsWith("/sign") ||
     pathname.startsWith("/api/sign") ||
+    isPublicResearch ||
+    isPublicResearchPdf ||
     PUBLIC.includes(pathname)
   ) {
     return NextResponse.next();

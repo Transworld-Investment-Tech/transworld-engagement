@@ -1,8 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./app/**/*.{js,jsx}",
-    "./components/**/*.{js,jsx}",
+    // .ts/.tsx added in v1.9 so the research module's TypeScript components are
+    // scanned for utility classes (the existing .js/.jsx modules are unaffected).
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./components/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     extend: {
