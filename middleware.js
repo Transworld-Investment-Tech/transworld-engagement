@@ -21,6 +21,12 @@ export async function middleware(req) {
   // gated.
   const isPublicResearchPdf = pathname.startsWith("/api/research/reports/");
 
+  // The research unsubscribe endpoint (RFC 8058 one-click + the confirmation
+  // page's POST). Public and self-securing via the per-contact unsubscribe
+  // token — a client is not staff and has no session. The /research/unsubscribe
+  // PAGE is already public (it's under /research and not /research/admin).
+  const isPublicResearchUnsub = pathname.startsWith("/api/research/unsubscribe");
+
   // Allow Next internals, static assets, and the login + auth endpoints.
   // `/sign` and `/api/sign` are the client signing flow: clients are not staff
   // and have no session, so these are public and secure THEMSELVES via the
@@ -36,6 +42,7 @@ export async function middleware(req) {
     pathname.startsWith("/api/sign") ||
     isPublicResearch ||
     isPublicResearchPdf ||
+    isPublicResearchUnsub ||
     PUBLIC.includes(pathname)
   ) {
     return NextResponse.next();

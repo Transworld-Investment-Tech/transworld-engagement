@@ -1,7 +1,7 @@
 {
   "name": "transworld-engagement",
-  "version": "1.11.0",
-  "releaseNote": "Research Phase 2a (subscription management, DB + UI only, no email): a Manage-subscribers roster at /research/admin/subscribers (editorial sub-brand) that subscribes clients from the shared Contacts directory via a multi-select picker, adds a not-yet-in-Contacts person (creating the contact first; de-dupes on email), edits tier, soft-unsubscribes/re-subscribes, and (admin only) hard-removes a subscription; a quick research on/off toggle on the individual contact record in Contacts (house style); the research dashboard Subscribers stat and Manage-subscribers tile go live while the remaining send-side tiles stay grayed. Adds subscribed_by provenance to report_subscriptions (one additive, idempotent migration). Research subscription status stays per-channel: it never affects Greetings or Documents. No new dependencies.",
+  "version": "1.12.0",
+  "releaseNote": "Research Phase 2b (send side — immediate broadcast): a Send page per published report (editorial sub-brand) that renders the weekly report to a branded email and sends it from investment@ to selected active subscribers, with a test-send-to-me, select-all / select-only-not-yet-sent, and a prior-send banner. Per-recipient delivery is tracked in send_log (queued -> sent/failed with the Resend id). Every email carries a working opt-out: a per-contact unsubscribe link plus RFC 8058 List-Unsubscribe headers, backed by a public token-gated /research/unsubscribe page and /api/research/unsubscribe endpoint that flip report_subscriptions to unsubscribed. A human clicks send, so the cron-never-mails-clients rule does not apply; scheduled sends, the Resend webhook, and analytics remain Phase 2c/2d. Ports the retired portal's email stack (template, render, dispatch, tokens) onto contacts/report_subscriptions. Adds @react-email/components and @react-email/render; no schema change, no new environment variables.",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.93.0",
+    "@react-email/components": "1.0.12",
+    "@react-email/render": "2.0.8",
     "@sparticuz/chromium": "131.0.1",
     "@supabase/supabase-js": "2.45.0",
     "bcryptjs": "2.4.3",

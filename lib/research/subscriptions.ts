@@ -162,6 +162,58 @@ export async function countActiveSubscribers(): Promise<number> {
   return count ?? 0;
 }
 
+/** A mailable active subscriber (for the send page's recipient list). */
+export interface Recipient {
+  contactId: string;
+  name: string;
+  email: string;
+  tier: ClientTier;
+}
+
+/**
+ * Active subscribers that can actually be emailed (non-null email), for the
+ * campaign send page. Dispatch re-resolves recipients itself at send time, so
+ * this is display/selection only.
+ */
+export async function fetchActiveRecipients(): Promise<Recipient[]> {
+  const supabase = getSupabaseAdmin();
+
+  const subsRes = await supabase
+    .from('report_subscriptions')
+    .select('contact_id, tier, status')
+    .eq('status', 'active');
+  if (subsRes.error || !subsRes.data || subsRes.data.length === 0) return [];
+  const subs = subsRes.data as Array<{
+    contact_id: string;
+    tier: ClientTier;
+  }>;
+
+  const ids = subs.map((s) => s.contact_id);
+  const contactsRes = await supabase
+    .from('contacts')
+    .select('id, title, first_name, last_name, email')
+    .in('id', ids);
+
+  const contactMap = new Map<string, ContactRow>();
+  for (const c of (contactsRes.data ?? []) as ContactRow[]) {
+    contactMap.set(c.id, c);
+  }
+
+  const out: Recipient[] = [];
+  for (const s of subs) {
+    const c = contactMap.get(s.contact_id);
+    if (!c || !c.email) continue; // can't email without an address
+    out.push({
+      contactId: s.contact_id,
+      name: [c.title, c.first_name, c.last_name].filter(Boolean).join(' '),
+      email: c.email,
+      tier: s.tier,
+    });
+  }
+  out.sort((a, b) => a.name.localeCompare(b.name));
+  return out;
+}
+
 /** One contact's subscription state, or null if never subscribed. */
 export async function fetchContactSubscription(
   contactId: string

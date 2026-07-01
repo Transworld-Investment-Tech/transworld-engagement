@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTransition } from 'react';
-import { Pencil, Eye, Trash2 } from 'lucide-react';
+import { Pencil, Eye, Trash2, Send } from 'lucide-react';
 import { deleteReportAction } from '@/app/research/admin/reports/actions';
 import type { ReportSummary } from '@/lib/research/types';
 
@@ -164,6 +164,16 @@ export function ReportsTable({ summaries }: ReportsTableProps) {
             >
               <Eye size={14} />
             </Link>
+            {report.status === 'published' && (
+              <Link
+                href={`/research/admin/reports/${report.id}/send`}
+                className="p-2 rounded transition hover:bg-stone-100"
+                style={{ color: '#0A1F44', textDecoration: 'none' }}
+                title="Send to subscribers"
+              >
+                <Send size={14} />
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => handleDelete(report.id, report.slug)}
