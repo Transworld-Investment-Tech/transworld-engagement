@@ -1,7 +1,7 @@
 {
   "name": "transworld-engagement",
-  "version": "1.13.1",
-  "releaseNote": "Research Phase 2c hotfix: the Resend webhook now suppresses a subscriber on a real hard bounce. Resend labels a permanent bounce type='Permanent' (with a soft bounce type='Transient'), not 'hard' — so the previous check logged the bounce on send_log but never flipped report_subscriptions to 'bounced'. The bounce match is now case-insensitive on 'permanent' (accepting 'hard' too); transient/soft bounces are still left alone for Resend to retry. Webhook-only change; no schema, dependency, or environment change.",
+  "version": "1.14.0",
+  "releaseNote": "Research Phase 2d: scheduled-send worker. Scheduling returns to the report Send page (writes a send_jobs row) and gets a Scheduled sends admin area (list, edit, cancel). A dispatch-only Vercel cron worker (/api/cron/process-sends, every 5 min) atomically claims due jobs via claim_due_send_jobs and hands each job's frozen recipient selection to the shared dispatchCampaign with triggeredBy='cron' — it never composes content or resolves recipients itself, and dispatch re-filters to still-active subscribers so a between-schedule-and-fire unsubscribe or bounce is dropped. Unpublishing a report auto-cancels its scheduled sends; the dashboard Scheduled tile is now live. SQL: one idempotent statement pins search_path on claim_due_send_jobs. No new env vars or dependencies. This is the Clement-approved cron carve-out — a human authors, reviews, and schedules each broadcast.",
   "private": true,
   "scripts": {
     "dev": "next dev",

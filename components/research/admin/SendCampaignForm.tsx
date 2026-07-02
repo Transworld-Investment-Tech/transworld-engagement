@@ -2,8 +2,13 @@
 
 import { useState, useTransition, useMemo } from 'react';
 import Link from 'next/link';
-import { Send, AlertCircle, Check, Loader2, Users } from 'lucide-react';
+import { Send, AlertCircle, Check, Loader2, Users, CalendarClock } from 'lucide-react';
 import type { Recipient } from '@/lib/research/subscriptions';
+import {
+  lagosInputToUtcIso,
+  nowPlusMinutesLagosInput,
+  formatLagos,
+} from '@/lib/research/datetime';
 
 const INK = '#0A1F44';
 const MUTED = '#3A4A6B';
@@ -26,7 +31,7 @@ interface Props {
   priorSends: PriorSend[];
 }
 
-type Status = 'idle' | 'testing' | 'sending' | 'done';
+type Status = 'idle' | 'testing' | 'sending' | 'done' | 'scheduling' | 'scheduled';
 
 export function SendCampaignForm({
   reportId,
@@ -45,6 +50,7 @@ export function SendCampaignForm({
     msg: string;
   } | null>(null);
   const [pending, startTransition] = useTransition();
+  const [scheduleAt, setScheduleAt] = useState('');
 
   const priorByContact = useMemo(() => {
     const map = new Map<string, PriorSend>();
@@ -144,6 +150,63 @@ export function SendCampaignForm({
           msg: `Sent to ${result.sentCount} of ${result.totalRecipients} recipient(s).${
             result.failedCount > 0 ? ` ${result.failedCount} failed.` : ''
           }`,
+        });
+      } catch (err) {
+        setFeedback({ kind: 'error', msg: (err as Error).message });
+        setStatus('idle');
+      }
+    });
+  };
+
+  const derivedScheduleIso = lagosInputToUtcIso(scheduleAt);
+  const scheduleMin = nowPlusMinutesLagosInput(10);
+
+  const handleSchedule = () => {
+    if (!subject.trim()) {
+      setFeedback({ kind: 'error', msg: 'Subject is required.' });
+      return;
+    }
+    if (selectedIds.size === 0) {
+      setFeedback({ kind: 'error', msg: 'Select at least one recipient.' });
+      return;
+    }
+    if (!derivedScheduleIso) {
+      setFeedback({ kind: 'error', msg: 'Choose a date and time to schedule.' });
+      return;
+    }
+    if (new Date(derivedScheduleIso).getTime() - Date.now() < 10 * 60 * 1000) {
+      setFeedback({
+        kind: 'error',
+        msg: 'Scheduled time must be at least 10 minutes in the future.',
+      });
+      return;
+    }
+    setFeedback(null);
+    setStatus('scheduling');
+    startTransition(async () => {
+      try {
+        const res = await fetch('/api/research/scheduled-sends', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reportId,
+            subject,
+            contactIds: Array.from(selectedIds),
+            scheduledFor: derivedScheduleIso,
+          }),
+        });
+        const result = await res.json();
+        if (!res.ok || !result.ok) {
+          setFeedback({ kind: 'error', msg: result.error ?? 'Could not schedule the send.' });
+          setStatus('idle');
+          return;
+        }
+        setStatus('scheduled');
+        setFeedback({
+          kind: 'success',
+          msg: `Scheduled for ${formatLagos(derivedScheduleIso)} — ${selectedIds.size} ${
+            selectedIds.size === 1 ? 'recipient' : 'recipients'
+          }.`,
         });
       } catch (err) {
         setFeedback({ kind: 'error', msg: (err as Error).message });
@@ -406,6 +469,67 @@ export function SendCampaignForm({
                   style={{ color: MUTED, textDecoration: 'underline' }}
                 >
                   Back to reports
+                </Link>
+              )}
+            </div>
+
+            {/* Schedule for later */}
+            <div className="mt-5 pt-5" style={{ borderTop: `1px solid ${LINE}` }}>
+              <div
+                className="font-body uppercase text-xs mb-3 flex items-center gap-1.5"
+                style={{ color: GOLD, letterSpacing: '0.22em' }}
+              >
+                <CalendarClock size={13} /> Schedule for later
+              </div>
+              <input
+                type="datetime-local"
+                value={scheduleAt}
+                min={scheduleMin}
+                onChange={(e) => setScheduleAt(e.target.value)}
+                disabled={pending || status === 'sending' || status === 'done'}
+                className="w-full px-3 py-2 rounded font-mono text-sm focus:outline-none disabled:opacity-60"
+                style={{ border: `1px solid ${LINE}`, background: CREAM, color: INK }}
+              />
+              <p className="font-body text-xs mt-2" style={{ color: MUTED, lineHeight: 1.5 }}>
+                Time is Africa/Lagos (WAT).{' '}
+                {derivedScheduleIso
+                  ? `Fires at the first check on or after ${formatLagos(derivedScheduleIso)}.`
+                  : 'The send fires at the first 5-minute check on or after this time.'}
+              </p>
+              <button
+                type="button"
+                onClick={handleSchedule}
+                disabled={
+                  pending ||
+                  !someSelected ||
+                  !scheduleAt ||
+                  status === 'sending' ||
+                  status === 'done'
+                }
+                className="mt-3 w-full px-4 py-3 rounded-full font-body text-sm flex items-center justify-center gap-2 transition hover:opacity-90 disabled:opacity-60"
+                style={{ border: `1px solid ${INK}`, color: INK, background: '#FFFFFF', fontWeight: 500 }}
+              >
+                {status === 'scheduling' ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Scheduling…
+                  </>
+                ) : status === 'scheduled' ? (
+                  <>
+                    <Check size={14} /> Scheduled
+                  </>
+                ) : (
+                  <>
+                    <CalendarClock size={14} /> Schedule send
+                  </>
+                )}
+              </button>
+              {status === 'scheduled' && (
+                <Link
+                  href="/research/admin/scheduled"
+                  className="mt-3 block text-center font-mono text-xs underline transition hover:opacity-70"
+                  style={{ color: MUTED, textDecoration: 'underline' }}
+                >
+                  View scheduled sends
                 </Link>
               )}
             </div>

@@ -136,10 +136,10 @@ export default async function ResearchDashboardPage() {
           icon={<Users size={18} />}
         />
         <ActionCard
+          href="/research/admin/scheduled"
           title="Scheduled sends"
           desc="Queue, edit, or cancel campaigns waiting to fire."
           icon={<CalendarClock size={18} />}
-          soon
         />
         <ActionCard
           href="/research/admin/analytics"

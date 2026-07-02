@@ -6,6 +6,7 @@ import { requireResearchManager } from '@/lib/research/auth';
 import { getSupabaseAdmin } from '@/lib/research/supabase';
 import { deleteReportPdf } from '@/lib/research/storage';
 import { deleteCachedPdf } from '@/lib/research/storage-rendered';
+import { cancelJobsForReport } from '@/lib/research/jobs';
 
 // ────────────── Form payload shape ──────────────
 
@@ -377,9 +378,14 @@ export async function unpublishReportAction(id: string): Promise<void> {
   // anyway, but keep a clean slate for any future re-publish.
   await deleteCachedPdf(id);
 
+  // Auto-cancel any scheduled sends for this report so a paused report can't
+  // fire a broadcast that dispatchCampaign would then reject (Phase 2d).
+  await cancelJobsForReport(id);
+
   revalidatePath('/research');
   revalidatePath('/research/archive');
   revalidatePath('/research/admin/reports');
+  revalidatePath('/research/admin/scheduled');
 }
 
 /** Delete a report and its source PDF. */

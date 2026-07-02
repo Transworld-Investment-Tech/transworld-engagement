@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/birthday-reminder",
       "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/cron/process-sends",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

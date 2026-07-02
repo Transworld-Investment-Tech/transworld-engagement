@@ -171,7 +171,7 @@ export interface SendJob {
   report_id: string;
   scheduled_for: string;
   status: SendJobStatus;
-  selected_client_ids: string[];
+  selected_contact_ids: string[];
   subject: string;
   created_by: string | null;
   processing_started_at: string | null;
@@ -192,7 +192,7 @@ export interface DispatchResult {
 
 export interface DispatchInput {
   reportId: string;
-  clientIds: string[];
+  contactIds: string[];
   subject: string;
   /** Provenance for logging — manual = "Send now" button, cron = scheduled job worker. */
   triggeredBy: 'manual' | 'cron';
